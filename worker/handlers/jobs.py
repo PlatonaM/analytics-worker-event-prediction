@@ -19,8 +19,7 @@ __all__ = ("Jobs",)
 
 from ..logger import getLogger
 from .. import model
-from .. event_prediction_pipeline.config import configs_pipeline
-from ..event_prediction_pipeline.pipeline import run_pipeline
+from .. import event_prediction_pipeline
 from . import Storage
 import threading
 import queue
@@ -30,8 +29,6 @@ import uuid
 import datetime
 import base64
 import gzip
-import pickle
-import dask.dataframe
 
 
 logger = getLogger(__name__.split(".", 1)[-1])
@@ -45,17 +42,39 @@ class Worker(threading.Thread):
 
     def run(self) -> None:
         try:
+            logger.debug("starting job '{}' ...".format(self.job[model.Job.id]))
             self.job[model.Job.status] = model.JobStatus.running
-            df = dask.dataframe.read_csv(self.job[model.Job.data_source])
-            df['time'] = dask.dataframe.to_datetime(df['time'])
-            df = df.set_index('time')
-            clf = pickle.loads(gzip.decompress(base64.standard_b64decode(self.job[model.Job.model][model.Model.data])))
-            self.job[model.Job.result] = str(run_pipeline(df, configs_pipeline[0], clf))
+            predictions = dict()
+            ml_configs = event_prediction_pipeline.config.configs_from_dict(self.job[model.Job.ml_config])
+            for ml_config in ml_configs:
+                logger.debug("{}: predicting '{}' for '{}' ...".format(
+                    self.job[model.Job.id], ml_config["target_errorCode"], ml_config["target_col"])
+                )
+                prediction = event_prediction_pipeline.pipeline.run_pipeline(
+                    event_prediction_pipeline.pipeline.df_from_csv(
+                        self.job[model.Job.data_source],
+                        self.job[model.Job.time_field],
+                        self.job[model.Job.sorted_data]
+                    ),
+                    ml_config,
+                    event_prediction_pipeline.pipeline.clf_from_pickle_bytes(
+                        gzip.decompress(base64.standard_b64decode(self.job[model.Job.model][model.Model.data]))
+                    )
+                )
+                result = {
+                    "target_errorCode": ml_config["target_errorCode"],
+                    "prediction": prediction.tolist()
+                }
+                if ml_config["target_col"] not in predictions:
+                    predictions[ml_config["target_col"]] = [result]
+                else:
+                    predictions[ml_config["target_col"]].append(result)
+            self.job[model.Job.result] = predictions
             self.job[model.Job.status] = model.JobStatus.finished
         except Exception as ex:
             self.job[model.Job.status] = model.JobStatus.failed
             self.job[model.Job.reason] = str(ex)
-            logger.error("job '{}' failed - {}".format(self.job[model.Job.id], ex))
+            logger.error("{}: failed - {}".format(self.job[model.Job.id], ex))
         self.done = True
 
 
@@ -76,10 +95,12 @@ class Jobs(threading.Thread):
             model.Job.created: '{}Z'.format(datetime.datetime.utcnow().isoformat()),
             model.Job.status: model.JobStatus.no_data,
             model.Job.model: data[model.Job.model],
-            model.Job.config: data[model.Job.config],
+            model.Job.ml_config: data[model.Job.ml_config],
             model.Job.data_source: None,
             model.Job.result: None,
-            model.Job.reason: None
+            model.Job.reason: None,
+            model.Job.time_field: data[model.Job.time_field],
+            model.Job.sorted_data: data[model.Job.sorted_data]
         }
         return {model.Job.id: job_id}
 
