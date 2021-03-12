@@ -61,7 +61,7 @@ class Job:
             resp.content_type = falcon.MEDIA_JSON
             data = self.__job_handler.get_job(job)
             del data[model.Job.model]
-            del data[model.Job.config]
+            del data[model.Job.ml_config]
             del data[model.Job.data_source]
             resp.body = json.dumps(data)
             resp.status = falcon.HTTP_200

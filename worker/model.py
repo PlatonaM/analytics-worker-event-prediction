@@ -32,7 +32,7 @@ class Job:
     created = "created"
     status = "status"
     model = "model"
-    config = "config"
+    ml_config = "ml_config"
     data_source = "data_source"
     result = "result"
     reason = "reason"
