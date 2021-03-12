@@ -36,6 +36,8 @@ class Job:
     data_source = "data_source"
     result = "result"
     reason = "reason"
+    time_field = "time_field"
+    sorted_data = "sorted_data"
 
 
 class Model:
