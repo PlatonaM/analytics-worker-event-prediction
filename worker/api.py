@@ -42,8 +42,8 @@ class Jobs:
         reqDebugLog(req)
         try:
             data = json.load(req.bounded_stream)
-            resp.body = json.dumps(self.__job_handler.create(data))
-            resp.content_type = falcon.MEDIA_JSON
+            resp.body = self.__job_handler.create(data)
+            resp.content_type = falcon.MEDIA_TEXT
             resp.status = falcon.HTTP_200
         except Exception as ex:
             resp.status = falcon.HTTP_500
