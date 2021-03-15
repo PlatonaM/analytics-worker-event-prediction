@@ -18,6 +18,10 @@
 __all__ = ("Job", "JobStatus")
 
 
+import typing
+import simple_struct
+
+
 class JobStatus:
     pending = "pending"
     running = "running"
@@ -27,20 +31,23 @@ class JobStatus:
     no_data = "nodata"
 
 
-class Job:
-    id = "id"
-    created = "created"
-    status = "status"
-    model = "model"
-    ml_config = "ml_config"
-    data_source = "data_source"
-    result = "result"
-    reason = "reason"
-    time_field = "time_field"
-    sorted_data = "sorted_data"
-
-
+@simple_struct.structure
 class Model:
-    created = "created"
-    data = "data"
+    id = None
+    created = None
+    config = None
+    columns = None
+    data = None
 
+
+@simple_struct.structure
+class Job:
+    id = None
+    created = None
+    status = JobStatus.no_data
+    data_source = None
+    result = None
+    reason = None
+    time_field = None
+    sorted_data = None
+    models: typing.List[Model] = None
