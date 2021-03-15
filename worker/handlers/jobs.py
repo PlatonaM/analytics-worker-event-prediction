@@ -117,6 +117,6 @@ class Jobs(threading.Thread):
                 if self.__worker_pool[job_id].done:
                     del self.__worker_pool[job_id]
                     try:
-                        self.__stg_handler.remove(self.__job_pool[job_id][model.Job.data_source])
+                        self.__stg_handler.remove(self.__job_pool[job_id].data_source)
                     except Exception as ex:
                         logger.error(ex)
