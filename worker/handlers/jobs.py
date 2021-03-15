@@ -85,32 +85,25 @@ class Jobs(threading.Thread):
         self.__check_delay = check_delay
         self.__max_jobs = max_jobs
         self.__job_queue = queue.Queue()
-        self.__job_pool = dict()
-        self.__worker_pool = dict()
+        self.__job_pool: typing.Dict[str, model.Job] = dict()
+        self.__worker_pool: typing.Dict[str, Worker] = dict()
 
-    def create(self, data: dict):
-        job_id = uuid.uuid4().hex
-        self.__job_pool[job_id] = {
-            model.Job.id: job_id,
-            model.Job.created: '{}Z'.format(datetime.datetime.utcnow().isoformat()),
-            model.Job.status: model.JobStatus.no_data,
-            model.Job.model: data[model.Job.model],
-            model.Job.ml_config: data[model.Job.ml_config],
-            model.Job.data_source: None,
-            model.Job.result: None,
-            model.Job.reason: None,
-            model.Job.time_field: data[model.Job.time_field],
-            model.Job.sorted_data: data[model.Job.sorted_data]
-        }
-        return {model.Job.id: job_id}
+    def create(self, data: dict) -> str:
+        job = model.Job(data)
+        job.id = uuid.uuid4().hex
+        job.created = '{}Z'.format(datetime.datetime.utcnow().isoformat())
+        job.models = [model.Model(item) for item in job.models]
+        self.__job_pool[job.id] = job
+        return job.id
 
     def add_data_source(self, job_id: str, data_source: str):
-        self.__job_pool[job_id][model.Job.data_source] = data_source
-        self.__job_pool[job_id][model.Job.status] = model.JobStatus.pending
+        job = self.__job_pool[job_id]
+        job.data_source = data_source
+        job.status = model.JobStatus.pending
         self.__job_queue.put_nowait(job_id)
 
-    def get_job(self, job_id: str):
-        return self.__job_pool[job_id].copy()
+    def get_job(self, job_id: str) -> model.Job:
+        return self.__job_pool[job_id]
 
     def run(self):
         while True:

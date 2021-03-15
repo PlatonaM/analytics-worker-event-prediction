@@ -59,10 +59,8 @@ class Job:
         reqDebugLog(req)
         try:
             resp.content_type = falcon.MEDIA_JSON
-            data = self.__job_handler.get_job(job)
-            del data[model.Job.model]
-            del data[model.Job.ml_config]
-            del data[model.Job.data_source]
+            data = dict(self.__job_handler.get_job(job))
+            del data["models"]
             resp.body = json.dumps(data)
             resp.status = falcon.HTTP_200
         except KeyError as ex:
