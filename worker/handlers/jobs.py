@@ -74,7 +74,7 @@ class Worker(threading.Thread):
                     predictions[config["target_col"]] = [result]
                 else:
                     predictions[config["target_col"]].append(result)
-            self.__job.result = json.dumps(predictions)
+            self.__job.result = predictions
             self.__job.status = model.JobStatus.finished
         except Exception as ex:
             self.__job.status = model.JobStatus.failed
