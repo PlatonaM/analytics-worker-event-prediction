@@ -68,7 +68,7 @@ class Worker(threading.Thread):
                 )
                 result = {
                     "target": config["target_errorCode"],
-                    "value": prediction.tolist()
+                    "result": prediction.tolist()[0]
                 }
                 if config["target_col"] not in predictions:
                     predictions[config["target_col"]] = [result]
