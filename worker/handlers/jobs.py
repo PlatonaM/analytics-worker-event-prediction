@@ -29,7 +29,6 @@ import uuid
 import datetime
 import base64
 import gzip
-import json
 
 
 logger = getLogger(__name__.split(".", 1)[-1])
