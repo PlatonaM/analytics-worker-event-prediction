@@ -45,15 +45,15 @@ class Worker(threading.Thread):
             logger.debug("starting job '{}' ...".format(self.__job.id))
             self.__job.status = models.JobStatus.running
             predictions = dict()
-            for _model in self.__job.models:
-                config = event_prediction_pipeline.config.config_from_json(_model.config)
+            for model in self.__job.models:
+                config = event_prediction_pipeline.config.config_from_json(model.config)
                 logger.debug(
                     "{}: predicting '{}' for '{}' ...".format(
                         self.__job.id, config["target_errorCode"],
                         config["target_col"]
                     )
                 )
-                logger.debug("model id '{}' created '{}'".format(_model.id, _model.created))
+                logger.debug("model id '{}' created '{}'".format(model.id, model.created))
                 prediction = event_prediction_pipeline.pipeline.run_pipeline(
                     df=event_prediction_pipeline.pipeline.df_from_csv(
                         self.__job.data_source,
@@ -62,7 +62,7 @@ class Worker(threading.Thread):
                     ),
                     config=config,
                     clf=event_prediction_pipeline.pipeline.clf_from_pickle_bytes(
-                        gzip.decompress(base64.standard_b64decode(_model.data))
+                        gzip.decompress(base64.standard_b64decode(model.data))
                     )
                 )
                 result = {
