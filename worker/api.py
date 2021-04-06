@@ -60,7 +60,7 @@ class Job:
         try:
             resp.content_type = falcon.MEDIA_JSON
             data = dict(self.__job_handler.get_job(job))
-            del data["models"]
+            data["models"] = [model.id for model in data["models"]]
             resp.body = json.dumps(data)
             resp.status = falcon.HTTP_200
         except KeyError as ex:
