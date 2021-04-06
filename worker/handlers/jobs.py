@@ -93,8 +93,7 @@ class Jobs(threading.Thread):
         self.__worker_pool: typing.Dict[str, Worker] = dict()
 
     def create(self, data: dict) -> str:
-        job = model.Job(data)
-        job.id = uuid.uuid4().hex
+        job = model.Job(data, id=uuid.uuid4().hex)
         job.created = '{}Z'.format(datetime.datetime.utcnow().isoformat())
         job.models = [model.Model(item) for item in job.models]
         self.__job_pool[job.id] = job
