@@ -18,7 +18,7 @@ __all__ = ("Jobs",)
 
 
 from ..logger import getLogger
-from .. import model
+from .. import models
 from .. import event_prediction_pipeline
 from . import Storage
 import threading
@@ -35,7 +35,7 @@ logger = getLogger(__name__.split(".", 1)[-1])
 
 
 class Worker(threading.Thread):
-    def __init__(self, job: model.Job):
+    def __init__(self, job: models.Job):
         super().__init__(name="jobs-worker-{}".format(job.id), daemon=True)
         self.__job = job
         self.done = False
@@ -43,7 +43,7 @@ class Worker(threading.Thread):
     def run(self) -> None:
         try:
             logger.debug("starting job '{}' ...".format(self.__job.id))
-            self.__job.status = model.JobStatus.running
+            self.__job.status = models.JobStatus.running
             predictions = dict()
             for _model in self.__job.models:
                 config = event_prediction_pipeline.config.config_from_json(_model.config)
@@ -74,9 +74,9 @@ class Worker(threading.Thread):
                 else:
                     predictions[config["target_col"]].append(result)
             self.__job.result = predictions
-            self.__job.status = model.JobStatus.finished
+            self.__job.status = models.JobStatus.finished
         except Exception as ex:
-            self.__job.status = model.JobStatus.failed
+            self.__job.status = models.JobStatus.failed
             self.__job.reason = str(ex)
             logger.error("{}: failed - {}".format(self.__job.id, ex))
         self.done = True
@@ -89,23 +89,23 @@ class Jobs(threading.Thread):
         self.__check_delay = check_delay
         self.__max_jobs = max_jobs
         self.__job_queue = queue.Queue()
-        self.__job_pool: typing.Dict[str, model.Job] = dict()
+        self.__job_pool: typing.Dict[str, models.Job] = dict()
         self.__worker_pool: typing.Dict[str, Worker] = dict()
 
     def create(self, data: dict) -> str:
-        job = model.Job(data, id=uuid.uuid4().hex)
+        job = models.Job(data, id=uuid.uuid4().hex)
         job.created = '{}Z'.format(datetime.datetime.utcnow().isoformat())
-        job.models = [model.Model(item) for item in job.models]
+        job.models = [models.Model(item) for item in job.models]
         self.__job_pool[job.id] = job
         return job.id
 
     def add_data_source(self, job_id: str, data_source: str):
         job = self.__job_pool[job_id]
         job.data_source = data_source
-        job.status = model.JobStatus.pending
+        job.status = models.JobStatus.pending
         self.__job_queue.put_nowait(job_id)
 
-    def get_job(self, job_id: str) -> model.Job:
+    def get_job(self, job_id: str) -> models.Job:
         return self.__job_pool[job_id]
 
     def run(self):

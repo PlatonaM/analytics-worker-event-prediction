@@ -18,7 +18,7 @@ __all__ = ("Jobs", "Job")
 
 
 from .logger import getLogger
-from . import handlers, model
+from . import handlers, models
 import falcon
 import json
 
