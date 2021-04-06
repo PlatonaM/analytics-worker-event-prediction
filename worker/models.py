@@ -52,6 +52,5 @@ class Job:
     data_source = None
     result = None
     reason = None
-    time_field = None
     sorted_data = None
     models: typing.List[Model] = None
