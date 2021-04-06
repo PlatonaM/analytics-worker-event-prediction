@@ -38,6 +38,10 @@ class Model:
     config = None
     columns = None
     data = None
+    default_values = None
+    service_id = None
+    source_id = None
+    time_field = None
 
 
 @simple_struct.structure
