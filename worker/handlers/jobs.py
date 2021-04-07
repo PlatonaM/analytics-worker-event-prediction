@@ -46,7 +46,7 @@ class Worker(threading.Thread):
             self.__job.status = models.JobStatus.running
             predictions = dict()
             for model in self.__job.models:
-                config = event_prediction_pipeline.config.config_from_json(model.config)
+                config = event_prediction_pipeline.config.config_from_dict(model.config)
                 logger.debug(
                     "{}: predicting '{}' for '{}' ...".format(
                         self.__job.id, config["target_errorCode"],
