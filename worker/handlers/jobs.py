@@ -57,7 +57,7 @@ class Worker(threading.Thread):
                 prediction = event_prediction_pipeline.pipeline.run_pipeline(
                     df=event_prediction_pipeline.pipeline.df_from_csv(
                         self.__job.data_source,
-                        self.__job.time_field,
+                        model.time_field,
                         self.__job.sorted_data
                     ),
                     config=config,
