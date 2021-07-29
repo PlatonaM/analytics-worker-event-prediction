@@ -41,6 +41,13 @@ def handle_sigterm(signo, stack_frame):
     logger.debug("got signal '{}' - exiting ...".format(signo))
     sys.exit(0)
 
+
+class Result:
+    def __init__(self):
+        self.job: typing.Optional[models.Job] = None
+        self.error = False
+
+
 class Worker(threading.Thread):
     def __init__(self, job: models.Job):
         super().__init__(name="jobs-worker-{}".format(job.id), daemon=True)
