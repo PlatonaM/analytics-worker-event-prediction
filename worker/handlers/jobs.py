@@ -131,12 +131,16 @@ class Jobs(threading.Thread):
     def run(self):
         while True:
             try:
-                time.sleep(self.__check_delay)
                 if len(self.__worker_pool) < self.__max_jobs:
-                    job_id = self.__job_queue.get()
-                    worker = Worker(self.__job_pool[job_id])
-                    self.__worker_pool[job_id] = worker
-                    worker.start()
+                    try:
+                        job_id = self.__job_queue.get(timeout=self.__check_delay)
+                        worker = Worker(self.__job_pool[job_id])
+                        self.__worker_pool[job_id] = worker
+                        worker.start()
+                    except queue.Empty:
+                        pass
+                else:
+                    time.sleep(self.__check_delay)
                 for job_id in list(self.__worker_pool.keys()):
                     if not self.__worker_pool[job_id].is_alive():
                         try:
