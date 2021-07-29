@@ -37,6 +37,10 @@ import sys
 logger = getLogger(__name__.split(".", 1)[-1])
 
 
+def handle_sigterm(signo, stack_frame):
+    logger.debug("got signal '{}' - exiting ...".format(signo))
+    sys.exit(0)
+
 class Worker(threading.Thread):
     def __init__(self, job: models.Job):
         super().__init__(name="jobs-worker-{}".format(job.id), daemon=True)
