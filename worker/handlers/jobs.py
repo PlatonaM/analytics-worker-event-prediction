@@ -48,13 +48,16 @@ class Result:
         self.error = False
 
 
-class Worker(threading.Thread):
+class Worker(multiprocessing.Process):
     def __init__(self, job: models.Job):
         super().__init__(name="jobs-worker-{}".format(job.id), daemon=True)
         self.__job = job
-        self.done = False
+        self.result = multiprocessing.Queue()
 
     def run(self) -> None:
+        signal.signal(signal.SIGTERM, handle_sigterm)
+        signal.signal(signal.SIGINT, handle_sigterm)
+        result_obj = Result()
         try:
             logger.debug("starting job '{}' ...".format(self.__job.id))
             self.__job.status = models.JobStatus.running
@@ -89,11 +92,14 @@ class Worker(threading.Thread):
                     predictions[config["target_col"]].append(result)
             self.__job.result = predictions
             self.__job.status = models.JobStatus.finished
+            logger.debug("{}: completed successfully".format(self.__job.id))
         except Exception as ex:
             self.__job.status = models.JobStatus.failed
             self.__job.reason = str(ex)
             logger.error("{}: failed - {}".format(self.__job.id, ex))
-        self.done = True
+            result_obj.error = True
+        result_obj.job = self.__job
+        self.result.put(result_obj)
 
 
 class Jobs(threading.Thread):
@@ -132,11 +138,18 @@ class Jobs(threading.Thread):
                     self.__worker_pool[job_id] = worker
                     worker.start()
                 for job_id in list(self.__worker_pool.keys()):
-                    if self.__worker_pool[job_id].done:
+                    if not self.__worker_pool[job_id].is_alive():
+                        try:
+                            res = self.__worker_pool[job_id].result.get(timeout=5)
+                            self.__job_pool[job_id] = res.job
+                        except queue.Empty:
+                            logger.error("job '{}' quit with exitcode '{}'".format(job_id, self.__worker_pool[job_id].exitcode))
+                            self.__job_pool[job_id].status = models.JobStatus.failed
+                        self.__worker_pool[job_id].close()
                         del self.__worker_pool[job_id]
                         try:
                             self.__stg_handler.remove(self.__job_pool[job_id].data_source)
                         except Exception as ex:
-                            logger.error(ex)
+                            logger.error("cleanup after job '{}' failed - {}".format(job_id, ex))
             except Exception as ex:
                 logger.error("job handling failed - {}".format(ex))
