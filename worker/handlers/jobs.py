@@ -124,16 +124,19 @@ class Jobs(threading.Thread):
 
     def run(self):
         while True:
-            time.sleep(self.__check_delay)
-            if len(self.__worker_pool) < self.__max_jobs:
-                job_id = self.__job_queue.get()
-                worker = Worker(self.__job_pool[job_id])
-                self.__worker_pool[job_id] = worker
-                worker.start()
-            for job_id in list(self.__worker_pool.keys()):
-                if self.__worker_pool[job_id].done:
-                    del self.__worker_pool[job_id]
-                    try:
-                        self.__stg_handler.remove(self.__job_pool[job_id].data_source)
-                    except Exception as ex:
-                        logger.error(ex)
+            try:
+                time.sleep(self.__check_delay)
+                if len(self.__worker_pool) < self.__max_jobs:
+                    job_id = self.__job_queue.get()
+                    worker = Worker(self.__job_pool[job_id])
+                    self.__worker_pool[job_id] = worker
+                    worker.start()
+                for job_id in list(self.__worker_pool.keys()):
+                    if self.__worker_pool[job_id].done:
+                        del self.__worker_pool[job_id]
+                        try:
+                            self.__stg_handler.remove(self.__job_pool[job_id].data_source)
+                        except Exception as ex:
+                            logger.error(ex)
+            except Exception as ex:
+                logger.error("job handling failed - {}".format(ex))
